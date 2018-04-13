@@ -4,7 +4,7 @@
     <profile name="wearable"/>
     <watch-application ambient-support="true" appid="net.shtras.omahawatch" exec="omahawatch">
         <label>omahawatch</label>
-        <icon>chronographwatch.png</icon>
+        <icon>omahawatch.png</icon>
     </watch-application>
     <privileges>
         <privilege>http://tizen.org/privilege/network.get</privilege>

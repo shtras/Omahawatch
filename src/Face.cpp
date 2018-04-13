@@ -194,18 +194,10 @@ void Face::updateWeather()
 		data_get_resource_path(weather->Icon(), imagePath, sizeof(imagePath));
 		elm_image_file_set(weatherIcon_, imagePath, NULL);
 
-		time_t sunrise = weather->Sunrise();
-		struct tm* sunriseInfo = localtime(&sunrise);
-		int sunriseDegree = sunriseInfo->tm_hour * HOUR_ANGLE;
-		sunriseDegree += sunriseInfo->tm_min * HOUR_ANGLE / 60.0;
-		rotateHand(sunriseIcon_, sunriseDegree, 180, 180);
+		moveSunIcon(sunriseIcon_, weather->Sunrise());
 		evas_object_show(sunriseIcon_);
 
-		time_t sunset = weather->Sunset();
-		struct tm* sunsetInfo = localtime(&sunset);
-		int sunsetDegree = sunsetInfo->tm_hour * HOUR_ANGLE;
-		sunsetDegree += sunsetInfo->tm_min * HOUR_ANGLE / 60.0;
-		rotateHand(sunsetIcon_, sunsetDegree, 180, 180);
+		moveSunIcon(sunsetIcon_, weather->Sunset());
 		evas_object_show(sunsetIcon_);
 
 	} else {
@@ -213,6 +205,18 @@ void Face::updateWeather()
 	}
 	delete weather;
 	dlog_print(DLOG_DEBUG, LOG_TAG, "Weather: %s", json.operator char*());
+}
+
+void Face::moveSunIcon(Evas_Object* icon, time_t time)
+{
+	struct tm* timeInfo = localtime(&time);
+	int degree = (timeInfo->tm_hour > 12 ? timeInfo->tm_hour - 12 : timeInfo->tm_hour) * HOUR_ANGLE;
+	degree += timeInfo->tm_min * HOUR_ANGLE / 60.0 - 90;
+	double rsin = sin(degree * M_PI / 180.0);
+	double rcos = cos(degree * M_PI / 180.0);
+	int x = (BASE_WIDTH / 2 - SUN_ICON_WIDTH / 2) * (1 + rcos);
+	int y = (BASE_HEIGHT / 2 - SUN_ICON_HEIGHT / 2) * (1 + rsin);
+	evas_object_move(icon, x, y);
 }
 
 void Face::locationStateCallback(location_service_state_e state, void *data)
@@ -508,10 +512,10 @@ bool Face::createParts()
 	if (!(handSec_ = createPart(IMAGE_HANDS_SEC, (BASE_WIDTH / 2) - (HANDS_SEC_WIDTH / 2), 0, HANDS_SEC_WIDTH, HANDS_SEC_HEIGHT))) {
 		return false;
 	}
-	if (!(sunsetIcon_ = createPart("images/sunset.png", (BASE_WIDTH / 2) - 15, 0, 30, 360))) {
+	if (!(sunsetIcon_ = createPart("images/sunset.png", 0, 0, SUN_ICON_WIDTH, SUN_ICON_HEIGHT))) {
 		return false;
 	}
-	if (!(sunriseIcon_ = createPart("images/sunrise.png", (BASE_WIDTH / 2) - 15, 0, 30, 360))) {
+	if (!(sunriseIcon_ = createPart("images/sunrise.png", 0, 0, SUN_ICON_WIDTH, SUN_ICON_HEIGHT))) {
 		return false;
 	}
 	evas_object_hide(sunsetIcon_);

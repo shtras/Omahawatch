@@ -65,6 +65,7 @@ private:
 	bool requestLocationServiceState(location_service_state_e state);
 
 	void setLastError(const char* fmt, ...);
+	void moveSunIcon(Evas_Object* icon, time_t time);
 
 	Evas_Object* window_;
 	Evas_Object* bg_;
