@@ -1,0 +1,140 @@
+color_classes {
+   color_class {
+      name: "dimmable";
+      color: 255 255 255 255;
+      color2: 255 255 255 255;
+      color3: 255 255 255 255;
+   }
+}
+collections {
+   group { name: "omaha";
+      styles {
+         style { "txt.error";
+            base: "font="Sans" font_size=13 text_class=entry color=#FFFFFF style=soft_outline outline_color=#0088AA64 valign=0.5 ellipsis=1.0 wrap=none align=center";
+         }
+         style { "txt.weather";
+            base: "font="Sans" font_size=14 text_class=entry color=#00A010 style=soft_outline outline_color=#005010 valign=0.5 ellipsis=1.0 wrap=none align=center";
+         }
+      }
+      images {
+         image: "perimeter.png" COMP;
+         image: "chrono_date_bg.png" COMP;
+         image: "frame1.png" COMP;
+      }
+      parts {
+         part { name: "txt.error";
+            type: TEXTBLOCK;
+            multiline: 1;
+            description { state: "default" 0.0;
+               rel1 { relative: 0.2 0.5; }
+               rel2 { relative: 0.2 0.5; }
+               align: 0.5 0.5;
+               min: 120 250;
+               fixed: 1 1;
+               color_class: "dimmable";
+               visible: 1;
+               text {
+                  style: "txt.error";
+                  text: "";
+               }
+            }
+         }
+         part { name: "img.dial.bg";
+            type: IMAGE;
+            description { state: "default" 0.0;
+               rel1 { relative: 0.0 0.0; }
+               rel2 { relative: 1.0 1.0; }
+               align: 0.5 0.5;
+               color_class: "dimmable";
+               image { normal: "perimeter.png"; }
+            }
+         }
+         part { name: "txt.weather";
+            type: TEXTBLOCK;
+            multiline: 1;
+            description { state: "default" 0.0;
+               rel1 { relative: 0.7 0.3; }
+               rel2 { relative: 0.7 0.3; }
+               align: 0.5 0.5;
+               min: 180 80;
+               fixed: 1 1;
+               color_class: "dimmable";
+               text {
+                  style: "txt.weather";
+                  text: "N/A";
+               }
+            }
+         }
+         part { name: "txt.battery.num";
+            type: TEXTBLOCK;
+            multiline: 0;
+            description { state: "default" 0.0;
+               rel1 { relative: 0.8 0.48; }
+               rel2 { relative: 0.8 0.48; }
+               align: 0.5 0.5;
+               color_class: "dimmable";
+               min: 50 50;
+               fixed: 1 1;
+               text {
+                  style: "txt.weather";
+                  text: "100";
+               }
+            }
+         }
+         part { name: "img.frame.steps";
+            type: IMAGE;
+            description {
+               state: "default" 0.0;
+               rel1 { relative: 257/360 263/360; }
+               rel2 { relative: 257/360 263/360; }
+               align: 0.5 0.5;
+               color_class: "dimmable";
+               min: 52 30;
+               fixed: 1 1;
+               image { normal: "frame1.png"; }
+            }
+         }
+         part { name: "txt.steps.num";
+            type: TEXTBLOCK;
+            description { state: "default" 0.0;
+               rel1 { relative: 0.5 0.5; to: "img.frame.steps"; }
+               rel2 { relative: 0.5 0.5; to: "img.frame.steps"; }               
+               align: 0.5 0.5;
+               min: 60 30;
+               color_class: "dimmable";
+               text {
+                  style: "txt.weather";
+                  text: "1234";
+               }
+            }
+         }
+         part { name: "img.frame.calories";
+            type: IMAGE;
+            description {
+               state: "default" 0.0;
+               rel1 { relative: 257/360 294/360; }
+               rel2 { relative: 257/360 294/360; }
+               align: 0.5 0.5;
+               color_class: "dimmable";
+               min: 52 30;
+               fixed: 1 1;
+               image { normal: "frame1.png"; }
+            }
+         }
+         part { name: "txt.calories.num";
+            type: TEXTBLOCK;
+            description { state: "default" 0.0;
+               rel1 { relative: 0.5 0.5; to: "img.frame.calories"; }
+               rel2 { relative: 0.5 0.5; to: "img.frame.calories"; }               
+               align: 0.5 0.5;
+               min: 60 30;
+               color_class: "dimmable";
+               text {
+                  style: "txt.weather";
+                  text: "72527";
+               }
+            }
+         }
+      } //parts end
+   } //group end
+} //collections end

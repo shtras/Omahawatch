@@ -1,0 +1,6 @@
+Debug
+Release
+.sign
+.cproject
+*~
+res/edje/*.edj

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<manifest xmlns="http://tizen.org/ns/packages" api-version="3.0" package="net.shtras.omahawatch" version="1.0.0">
+    <author email="shtras@gmail.com" href="http://shtras.net">Gregory Shtrasberg</author>
+    <profile name="wearable"/>
+    <watch-application ambient-support="true" appid="net.shtras.omahawatch" exec="omahawatch">
+        <label>omahawatch</label>
+        <icon>chronographwatch.png</icon>
+    </watch-application>
+    <privileges>
+        <privilege>http://tizen.org/privilege/network.get</privilege>
+        <privilege>http://tizen.org/privilege/healthinfo</privilege>
+        <privilege>http://tizen.org/privilege/location.coarse</privilege>
+        <privilege>http://tizen.org/privilege/location</privilege>
+        <privilege>http://tizen.org/privilege/alarm.get</privilege>
+        <privilege>http://tizen.org/privilege/internet</privilege>
+        <privilege>http://tizen.org/privilege/alarm.set</privilege>
+    </privileges>
+</manifest>
