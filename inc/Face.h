@@ -53,6 +53,8 @@ private:
 	void updateTextFields();
 	void updateTextField(const char* fieldId, int value);
 
+	void updateDate(watch_time_h time);
+
 	static bool weatherTimerFunc(void* data);
 	void onWeatherTimer();
 
@@ -106,6 +108,8 @@ private:
 	int locationStateRequested_;
 
 	list<string> errors_;
+	time_t sunrise_;
+	time_t sunset_;
 };
 
 #endif /* FACE_H_ */

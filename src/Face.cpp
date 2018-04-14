@@ -20,6 +20,35 @@
 #define WATCH_ERR(...)
 #endif
 
+static const char* Months[] = {
+		"Nul",
+		"Jan",
+		"Feb",
+		"Mar",
+		"Apr",
+		"May",
+		"Apr",
+		"May",
+		"Jun",
+		"Jul",
+		"Aug",
+		"Sep",
+		"Oct",
+		"Nov",
+		"Dec"
+};
+
+static const char* Weekdays[] = {
+		"Nul",
+		"Sun",
+		"Mon",
+		"Tue",
+		"Wed",
+		"Thu",
+		"Fri",
+		"Sat"
+};
+
 Face::Face(int width, int height):
 	window_(NULL),
 	bg_(NULL),
@@ -50,7 +79,9 @@ Face::Face(int width, int height):
 	longitude_(0),
 	latitude_(0),
 	locationState_(-1),
-	locationStateRequested_(-1)
+	locationStateRequested_(-1),
+	sunrise_(-1),
+	sunset_(-1)
 {
 }
 
@@ -194,12 +225,13 @@ void Face::updateWeather()
 		data_get_resource_path(weather->Icon(), imagePath, sizeof(imagePath));
 		elm_image_file_set(weatherIcon_, imagePath, NULL);
 
-		moveSunIcon(sunriseIcon_, weather->Sunrise());
+		sunrise_ = weather->Sunrise();
+		sunset_ = weather->Sunset();
+		moveSunIcon(sunriseIcon_, sunrise_);
 		evas_object_show(sunriseIcon_);
 
-		moveSunIcon(sunsetIcon_, weather->Sunset());
+		moveSunIcon(sunsetIcon_, sunset_);
 		evas_object_show(sunsetIcon_);
-
 	} else {
 		WATCH_ERR("%s", "jsnerr");
 	}
@@ -344,6 +376,7 @@ void Face::Tick(watch_time_h time)
 
 	moveHands(time);
 	updateTextFields();
+	updateDate(time);
 }
 
 bool Face::ToggleAmbient(bool ambient)
@@ -605,6 +638,55 @@ void Face::moveHands(watch_time_h time)
 	degree += msec * SEC_ANGLE / 1000.0;
 	rotateHand(handSec_, degree, (BASE_WIDTH / 2), (BASE_HEIGHT / 2));
 	rotateHand(handsSecShadow_, degree,  (BASE_WIDTH / 2), (BASE_HEIGHT / 2) + HANDS_SEC_SHADOW_PADDING);
+}
+
+void Face::updateDate(watch_time_h time)
+{
+	char fullDateStr[256];
+	int hour, minute, month, day, weekDay;
+	watch_time_get_month(time, &month);
+	watch_time_get_day(time, &day);
+	watch_time_get_day_of_week(time, &weekDay);
+	sprintf(fullDateStr, "%s %s %d", Weekdays[weekDay], Months[month], day);
+	if (sunset_ == -1 || sunrise_ == -1) {
+		elm_object_part_text_set(layout_, "txt.date", fullDateStr);
+		return;
+	}
+	struct tm sunsetInfo;
+	sunsetInfo = *localtime(&sunset_);
+	struct tm sunriseInfo;
+	sunriseInfo = *localtime(&sunrise_);
+	bool beforeSunrise = false;
+	watch_time_get_hour24(time, &hour);
+	watch_time_get_minute(time, &minute);
+	if (hour > sunsetInfo.tm_hour || hour < sunriseInfo.tm_hour) {
+		beforeSunrise = true;
+	} else if (hour == sunsetInfo.tm_hour && minute > sunsetInfo.tm_min) {
+		beforeSunrise = true;
+	} else if (hour == sunriseInfo.tm_hour && minute <= sunriseInfo.tm_min) {
+		beforeSunrise = true;
+	}
+	struct tm* nextEvent = beforeSunrise ? &sunriseInfo : &sunsetInfo;
+
+	int dHour = nextEvent->tm_hour - hour;
+	int dMinute = nextEvent->tm_min - minute;
+	if (dMinute < 0) {
+		dMinute += 60;
+		--dHour;
+	}
+	if (dHour < 0) {
+		dHour += 24;
+	}
+
+	const char* nextEventStr = beforeSunrise ? "Sunrise" : "Sunset";
+	char fullNextEventStr[128] = {0};
+	if (dHour == 0 && dMinute == 0) {
+		sprintf(fullNextEventStr, "<br/>%s is now", nextEventStr);
+	} else {
+		sprintf(fullNextEventStr, "<br/>%s in<br/>%.2d:%.2d", nextEventStr, dHour, dMinute);
+	}
+	strcat(fullDateStr, fullNextEventStr);
+	elm_object_part_text_set(layout_, "txt.date", fullDateStr);
 }
 
 void Face::updateTextFields()

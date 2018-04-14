@@ -15,6 +15,9 @@ collections {
          style { "txt.weather";
             base: "font="Sans" font_size=14 text_class=entry color=#00A010 style=soft_outline outline_color=#005010 valign=0.5 ellipsis=1.0 wrap=none align=center";
          }
+         style { "txt.date";
+            base: "font="Sans" font_size=13 text_class=entry color=#00A010 style=soft_outline outline_color=#005010 valign=0.5 ellipsis=1.0 wrap=none align=center";
+         }
       }
       images {
          image: "perimeter.png" COMP;
@@ -61,7 +64,23 @@ collections {
                color_class: "dimmable";
                text {
                   style: "txt.weather";
-                  text: "N/A";
+                  text: "Here be<br/>weather";
+               }
+            }
+         }
+         part { name: "txt.date";
+            type: TEXTBLOCK;
+            multiline: 1;
+            description { state: "default" 0.0;
+               rel1 { relative: 0.5 0.8; }
+               rel2 { relative: 0.5 0.8; }
+               align: 0.5 0.5;
+               min: 90 60;
+               fixed: 1 1;
+               color_class: "dimmable";
+               text {
+                  style: "txt.date";
+                  text: "Date";
                }
             }
          }
