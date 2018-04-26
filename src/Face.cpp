@@ -2,7 +2,6 @@
 #include "data.h"
 #include "CurlWrapper.h"
 #include "Helpers.h"
-#include "WeatherInfo.h"
 #include <stdarg.h>
 #include <time.h>
 
@@ -67,6 +66,7 @@ Face::Face(int width, int height):
 	weatherTimer_(NULL),
 	locationTimeoutTimer_(NULL),
 	locationManager_(NULL),
+	weather_(new WeatherInfo()),
 	width_(width),
 	height_(height),
 	listener_(NULL),
@@ -79,9 +79,7 @@ Face::Face(int width, int height):
 	longitude_(0),
 	latitude_(0),
 	locationState_(-1),
-	locationStateRequested_(-1),
-	sunrise_(-1),
-	sunset_(-1)
+	locationStateRequested_(-1)
 {
 }
 
@@ -136,6 +134,22 @@ Face::~Face()
 		location_manager_stop(locationManager_);
 		location_manager_destroy(locationManager_);
 	}
+	delete weather_;
+}
+
+void Face::weatherClickCallback(void *data, Evas *e, Evas_Object *obj, void *event_info)
+{
+	Face* face = (Face*)data;
+	face->onWeatherClick();
+}
+
+void Face::onWeatherClick()
+{
+	if (!weather_) {
+		return;
+	}
+	weather_->ToggleScale();
+	updateWeatherText();
 }
 
 bool Face::Init()
@@ -177,9 +191,6 @@ bool Face::Init()
 		return false;
 	}
 
-	WATCH_ERR("%s", "test1");
-	WATCH_ERR("%s", "test2");
-
 	return true;
 }
 
@@ -188,6 +199,16 @@ int Face::updateLocation()
 	double altitude;
 	time_t timestamp;
 	return location_manager_get_position(locationManager_, &altitude, &latitude_, &longitude_, &timestamp);
+}
+
+void Face::updateWeatherText()
+{
+	if (!weather_ || !weather_->Ready()) {
+		return;
+	}
+	char text[64] = { 0, };
+	weather_->GetString(text, sizeof(text));
+	elm_object_part_text_set(layout_, "txt.weather", text);
 }
 
 void Face::updateWeather()
@@ -202,40 +223,22 @@ void Face::updateWeather()
 		return;
 	}
 
-	WeatherInfo* weather = new WeatherInfo();
-	bool res = weather->FromJson(json);
+	bool res = weather_->FromJson(json);
 	if (res) {
-		watch_time_h time;
-		int ret = watch_time_get_current_time(&time);
-		if (ret != APP_ERROR_NONE) {
-			dlog_print(DLOG_ERROR, LOG_TAG, "Failed to get current time. err = %d", ret);
-			return;
-		}
-		int hour, min;
-		watch_time_get_hour(time, &hour);
-		watch_time_get_minute(time, &min);
-		/* Time data should be freed. */
-		watch_time_delete(time);
-
-		char text[64] = { 0, };
-		snprintf(text, sizeof(text), "%s<br/>%.2d:%.2d: %d°F", weather->Location(), hour, min, (int)weather->Temp());
-		elm_object_part_text_set(layout_, "txt.weather", text);
+		updateWeatherText();
 
 		char imagePath[PATH_MAX] = { 0, };
-		data_get_resource_path(weather->Icon(), imagePath, sizeof(imagePath));
+		data_get_resource_path(weather_->Icon(), imagePath, sizeof(imagePath));
 		elm_image_file_set(weatherIcon_, imagePath, NULL);
 
-		sunrise_ = weather->Sunrise();
-		sunset_ = weather->Sunset();
-		moveSunIcon(sunriseIcon_, sunrise_);
+		moveSunIcon(sunriseIcon_, weather_->Sunrise());
 		evas_object_show(sunriseIcon_);
 
-		moveSunIcon(sunsetIcon_, sunset_);
+		moveSunIcon(sunsetIcon_, weather_->Sunset());
 		evas_object_show(sunsetIcon_);
 	} else {
 		WATCH_ERR("%s", "jsnerr");
 	}
-	delete weather;
 	dlog_print(DLOG_DEBUG, LOG_TAG, "Weather: %s", json.operator char*());
 }
 
@@ -553,6 +556,13 @@ bool Face::createParts()
 	}
 	evas_object_hide(sunsetIcon_);
 	evas_object_hide(sunriseIcon_);
+
+	Evas_Object* tb = elm_entry_add(bg_);
+	evas_object_move(tb, 202, 68);
+	evas_object_resize(tb, 100, 80);
+	evas_object_show(tb);
+	evas_object_event_callback_add(tb, EVAS_CALLBACK_MOUSE_UP, Face::weatherClickCallback, this);
+
 	return true;
 }
 
@@ -648,14 +658,16 @@ void Face::updateDate(watch_time_h time)
 	watch_time_get_day(time, &day);
 	watch_time_get_day_of_week(time, &weekDay);
 	sprintf(fullDateStr, "%s %s %d", Weekdays[weekDay], Months[month], day);
-	if (sunset_ == -1 || sunrise_ == -1) {
+	if (!weather_ || !weather_->Ready()) {
 		elm_object_part_text_set(layout_, "txt.date", fullDateStr);
 		return;
 	}
+	time_t sunset = weather_->Sunset();
 	struct tm sunsetInfo;
-	sunsetInfo = *localtime(&sunset_);
+	sunsetInfo = *localtime(&sunset);
+	time_t sunrise = weather_->Sunrise();
 	struct tm sunriseInfo;
-	sunriseInfo = *localtime(&sunrise_);
+	sunriseInfo = *localtime(&sunrise);
 	bool beforeSunrise = false;
 	watch_time_get_hour24(time, &hour);
 	watch_time_get_minute(time, &minute);

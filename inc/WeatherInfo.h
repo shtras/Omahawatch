@@ -9,11 +9,12 @@ public:
 	~WeatherInfo();
 
 	bool FromJson(const char* json);
-	const char* Location() {return location_;}
 	const char* Icon() {return icon_;}
-	float Temp() {return temp_;}
 	time_t Sunset() {return sunset_;}
 	time_t Sunrise() {return sunrise_;}
+	void GetString(char* str, int len);
+	bool Ready() {return ready_;}
+	void ToggleScale() { celsius_ = !celsius_; }
 private:
 	JsonNode* getNode(JsonObject* parent, const char* name);
 	JsonNode* getNodePath(JsonObject* parent, const char* path);
@@ -23,6 +24,8 @@ private:
 	char icon_[64];
 	time_t sunset_;
 	time_t sunrise_;
+	bool ready_;
+	bool celsius_;
 };
 
 #endif

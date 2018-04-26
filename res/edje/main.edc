@@ -16,7 +16,7 @@ collections {
             base: "font="Sans" font_size=14 text_class=entry color=#00A010 style=soft_outline outline_color=#005010 valign=0.5 ellipsis=1.0 wrap=none align=center";
          }
          style { "txt.date";
-            base: "font="Sans" font_size=13 text_class=entry color=#00A010 style=soft_outline outline_color=#005010 valign=0.5 ellipsis=1.0 wrap=none align=center";
+            base: "font=Sans font_size=13 text_class=entry color=#00A010 style=soft_outline outline_color=#005010 valign=0.5 ellipsis=1.0 wrap=none align=center";
          }
       }
       images {
@@ -59,7 +59,7 @@ collections {
                rel1 { relative: 0.7 0.3; }
                rel2 { relative: 0.7 0.3; }
                align: 0.5 0.5;
-               min: 180 80;
+               min: 100 80;
                fixed: 1 1;
                color_class: "dimmable";
                text {

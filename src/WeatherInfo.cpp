@@ -1,12 +1,18 @@
 #include "WeatherInfo.h"
+#include <Elementary.h>
+#include <watch_app.h>
+#include <dlog.h>
 #include <stdio.h>
 #include <string.h>
+#include "omahawatch.h"
 
 WeatherInfo::WeatherInfo():
 	jsonParser_(NULL),
 	temp_(0),
 	sunset_(0),
-	sunrise_(0)
+	sunrise_(0),
+	ready_(false),
+	celsius_(false)
 {
 	location_[0] = '\0';
 }
@@ -125,7 +131,6 @@ bool WeatherInfo::FromJson(const char* json)
     	return false;
     }
     temp_ = json_node_get_double(tempNode) - 273.0f;
-    temp_ = temp_ * 9.0f / 5.0f + 32.0f;
 
     // Sunset
     JsonNode* sunsetNode = getNodePath(rootObj, "sys/sunset");
@@ -143,5 +148,27 @@ bool WeatherInfo::FromJson(const char* json)
 
     g_object_unref(jsonParser_);
     jsonParser_ = NULL;
+    ready_ = true;
     return true;
+}
+
+void WeatherInfo::GetString(char* str, int len)
+{
+	*str = '\0';
+	watch_time_h time;
+	int ret = watch_time_get_current_time(&time);
+	if (ret != APP_ERROR_NONE) {
+		dlog_print(DLOG_ERROR, LOG_TAG, "Failed to get current time. err = %d", ret);
+		return;
+	}
+
+	int hour, min;
+	watch_time_get_hour(time, &hour);
+	watch_time_get_minute(time, &min);
+	watch_time_delete(time);
+	int temp = (int)temp_;
+	if (!celsius_) {
+		temp = temp * 9.0f / 5.0f + 32.0f;
+	}
+	snprintf(str, len, "%s<br/>%.2d:%.2d: %d°%c", location_, hour, min, temp, (celsius_ ? 'C' : 'F'));
 }

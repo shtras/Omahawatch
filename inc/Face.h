@@ -14,6 +14,7 @@
 #include "Timer.h"
 #include <list>
 #include <string>
+#include "WeatherInfo.h"
 using namespace std;
 
 class Face {
@@ -47,6 +48,9 @@ private:
 	static void locationStateCallback(location_service_state_e state, void *data);
 	void onLocationState(location_service_state_e state);
 
+	static void weatherClickCallback(void *data, Evas *e, Evas_Object *obj, void *eventInfo);
+	void onWeatherClick();
+
 	void moveHands(watch_time_h time);
 	void rotateHand(Evas_Object *hand, double degree, Evas_Coord cx, Evas_Coord cy);
 
@@ -63,6 +67,7 @@ private:
 
 	int updateLocation();
 	void updateWeather();
+	void updateWeatherText();
 
 	bool requestLocationServiceState(location_service_state_e state);
 
@@ -87,6 +92,7 @@ private:
 	Timer::TimerHandle locationTimeoutTimer_;
 
 	location_manager_h locationManager_;
+	WeatherInfo* weather_;
 
 	int width_;
 	int height_;
@@ -106,10 +112,7 @@ private:
 
 	int locationState_;
 	int locationStateRequested_;
-
 	list<string> errors_;
-	time_t sunrise_;
-	time_t sunset_;
 };
 
 #endif /* FACE_H_ */
