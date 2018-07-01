@@ -26,8 +26,6 @@ static const char* Months[] = {
 		"Mar",
 		"Apr",
 		"May",
-		"Apr",
-		"May",
 		"Jun",
 		"Jul",
 		"Aug",
