@@ -208,11 +208,14 @@ void Face::updateWeatherText()
 	elm_object_part_text_set(layout_, "txt.weather", text);
 }
 
+#define Q(x)  #x
+#define QUOTE(x)  Q(x)
+
 void Face::updateWeather()
 {
 	WATCH_ERR("%s", "updw");
 	char url[256];
-	sprintf(url, "http://api.openweathermap.org/data/2.5/weather?lat=%.3f&lon=%.3f&APPID=2ebb4c9fd2cc3a66a962f5b5837e7110", latitude_, longitude_);
+	sprintf(url, "http://api.openweathermap.org/data/2.5/weather?lat=%.3f&lon=%.3f&APPID=" QUOTE(WEATHER_TOKEN), latitude_, longitude_);
 	int err = 0;
 	auto json = CurlWrapper::Get(url, &err);
 	if (json.empty()) {
