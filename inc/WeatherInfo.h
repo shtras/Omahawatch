@@ -26,6 +26,8 @@ private:
 	time_t sunrise_;
 	bool ready_;
 	bool celsius_;
+	int updateHour_;
+	int updateMinute_;
 };
 
 #endif

@@ -12,7 +12,9 @@ WeatherInfo::WeatherInfo():
 	sunset_(0),
 	sunrise_(0),
 	ready_(false),
-	celsius_(false)
+	celsius_(false),
+	updateHour_(0),
+	updateMinute_(0)
 {
 	location_[0] = '\0';
 }
@@ -113,8 +115,14 @@ bool WeatherInfo::FromJson(const char* json)
     	return false;
     }
 	gchar* name = json_node_dup_string(nameNode);
-	strcpy(location_, name);
+	strncpy(location_, name, sizeof(location_) / sizeof(location_[0]) - 1);
 	g_free(name);
+	if (strlen(location_) > 20) {
+		location_[17] = '.';
+		location_[18] = '.';
+		location_[19] = '.';
+		location_[20] = '\0';
+	}
 
 	// Icon
 	JsonNode* iconNode = getNodePath(rootObj, "weather[0]/icon");
@@ -148,6 +156,18 @@ bool WeatherInfo::FromJson(const char* json)
 
     g_object_unref(jsonParser_);
     jsonParser_ = NULL;
+
+    watch_time_h time;
+	int ret = watch_time_get_current_time(&time);
+	if (ret != APP_ERROR_NONE) {
+		dlog_print(DLOG_ERROR, LOG_TAG, "Failed to get current time. err = %d", ret);
+		return false;
+	}
+
+	watch_time_get_hour(time, &updateHour_);
+	watch_time_get_minute(time, &updateMinute_);
+	watch_time_delete(time);
+
     ready_ = true;
     return true;
 }
@@ -155,20 +175,9 @@ bool WeatherInfo::FromJson(const char* json)
 void WeatherInfo::GetString(char* str, int len)
 {
 	*str = '\0';
-	watch_time_h time;
-	int ret = watch_time_get_current_time(&time);
-	if (ret != APP_ERROR_NONE) {
-		dlog_print(DLOG_ERROR, LOG_TAG, "Failed to get current time. err = %d", ret);
-		return;
-	}
-
-	int hour, min;
-	watch_time_get_hour(time, &hour);
-	watch_time_get_minute(time, &min);
-	watch_time_delete(time);
 	int temp = (int)temp_;
 	if (!celsius_) {
 		temp = temp * 9.0f / 5.0f + 32.0f;
 	}
-	snprintf(str, len, "%s<br/>%.2d:%.2d: %d°%c", location_, hour, min, temp, (celsius_ ? 'C' : 'F'));
+	snprintf(str, len, "%s<br/>%.2d:%.2d: %d°%c", location_, updateHour_, updateMinute_, temp, (celsius_ ? 'C' : 'F'));
 }
