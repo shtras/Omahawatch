@@ -6,7 +6,6 @@ class WeatherInfo
 {
 public:
 	WeatherInfo();
-	~WeatherInfo();
 
 	bool FromJson(const char* json);
 	const char* Icon() {return icon_;}
@@ -18,16 +17,15 @@ public:
 private:
 	JsonNode* getNode(JsonObject* parent, const char* name);
 	JsonNode* getNodePath(JsonObject* parent, const char* path);
-	JsonParser* jsonParser_;
-	float temp_;
+	float temp_ = 0;
 	char location_[128];
 	char icon_[64];
-	time_t sunset_;
-	time_t sunrise_;
-	bool ready_;
-	bool celsius_;
-	int updateHour_;
-	int updateMinute_;
+	time_t sunset_ = 0;
+	time_t sunrise_ = 0;
+	bool ready_ = false;
+	bool celsius_ = true;
+	int updateHour_ = 0;
+	int updateMinute_ = 0;
 };
 
 #endif

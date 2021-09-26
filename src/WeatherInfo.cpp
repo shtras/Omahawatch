@@ -6,38 +6,25 @@
 #include <string.h>
 #include "omahawatch.h"
 
-WeatherInfo::WeatherInfo():
-	jsonParser_(NULL),
-	temp_(0),
-	sunset_(0),
-	sunrise_(0),
-	ready_(false),
-	celsius_(false),
-	updateHour_(0),
-	updateMinute_(0)
+#include <memory>
+
+WeatherInfo::WeatherInfo()
 {
 	location_[0] = '\0';
 }
 
-WeatherInfo::~WeatherInfo()
-{
-	if (jsonParser_) {
-		g_object_unref(jsonParser_);
-	}
-}
-
 JsonNode* WeatherInfo::getNode(JsonObject* parent, const char* name)
 {
-	guint size = json_object_get_size (parent);
-	GList* keysList = json_object_get_members (parent);
-	GList* valList = json_object_get_values (parent);
-	JsonNode* res = NULL;
-	for (int i=0; i<size; ++i) {
+	auto size = json_object_get_size (parent);
+	auto keysList = json_object_get_members (parent);
+	auto valList = json_object_get_values (parent);
+	JsonNode* res = nullptr;
+	for (decltype(size) i=0; i<size; ++i) {
 		if (!keysList || !valList) {
 			break;
 		}
-	    if (!strcmp((gchar*)keysList->data, name)) {
-	    	res = (JsonNode*)valList->data;
+	    if (!strcmp(static_cast<gchar*>(keysList->data), name)) {
+	    	res = static_cast<JsonNode*>(valList->data);
 	    	break;
 	    }
 		keysList = g_list_next(keysList);
@@ -54,7 +41,7 @@ JsonNode* WeatherInfo::getNodePath(JsonObject* parent, const char* path)
 	strcpy(workPath, path);
 	char* pathItr = strtok(workPath, "/");
 	JsonObject* objItr = parent;
-	JsonNode* nodeItr = NULL;
+	JsonNode* nodeItr = nullptr;
 	while (pathItr) {
 		int idx = -1;
 		char* arr = strchr(pathItr, '[');
@@ -63,44 +50,41 @@ JsonNode* WeatherInfo::getNodePath(JsonObject* parent, const char* path)
 			*arr = '\0';
 		}
 		if (!objItr) {
-			return NULL;
+			return nullptr;
 		}
 		nodeItr = getNode(objItr, pathItr);
 		if (!nodeItr) {
-			return NULL;
+			return nullptr;
 		}
 		if (idx > -1) {
 			JsonArray* jsonArray = json_node_get_array(nodeItr);
 			if (!jsonArray) {
-				return NULL;
+				return nullptr;
 			}
 			guint arraySize = json_array_get_length(jsonArray);
 			if (arraySize < idx + 1) {
-				return NULL;
+				return nullptr;
 			}
 			nodeItr = json_array_get_element(jsonArray,idx);
 		}
 		objItr = json_node_get_object(nodeItr);
-		pathItr = strtok(NULL, "/");
+		pathItr = strtok(nullptr, "/");
 	}
 	return nodeItr;
 }
 
 bool WeatherInfo::FromJson(const char* json)
 {
-	GError *error = NULL;
-	if (jsonParser_) {
-		g_object_unref(jsonParser_);
-	}
-	jsonParser_ = json_parser_new();
-	json_parser_load_from_data(jsonParser_, json, strlen(json), &error);
+	GError *error = nullptr;
+	auto jsonParser = std::unique_ptr<JsonParser, std::function<void(JsonParser*)>>(json_parser_new(), [](JsonParser* p){g_object_unref(p);});
+	json_parser_load_from_data(jsonParser.get(), json, strlen(json), &error);
 	if (error) {
 		g_error_free(error);
 		return false;
 	}
 
 	JsonNode *root;
-    root = json_parser_get_root(jsonParser_);
+    root = json_parser_get_root(jsonParser.get());
     if (!root) {
     	return false;
     }
@@ -153,9 +137,6 @@ bool WeatherInfo::FromJson(const char* json)
     	return false;
     }
     sunrise_ = (time_t)json_node_get_int(sunriseNode);
-
-    g_object_unref(jsonParser_);
-    jsonParser_ = NULL;
 
     watch_time_h time;
 	int ret = watch_time_get_current_time(&time);

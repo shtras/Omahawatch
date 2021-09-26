@@ -5,42 +5,33 @@
 #include <dlog.h>
 #include "omahawatch.h"
 
-CurlWrapper::CurlWrapper()
+class StringContext
 {
+public:
+    explicit StringContext(std::string& str) noexcept: data_(str)
+	{
+	    str.reserve(2 << 14);
+	}
 
+    static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp)
+    {
+        auto ctx = static_cast<StringContext*>(userp);
+        size *= nmemb;
+        ctx->data_.append(static_cast<const char*>(contents), size);
+        return size;
+    }
 
-}
-
-CurlWrapper::~CurlWrapper()
-{
-
-}
-struct MemoryStruct {
-  char *memory;
-  size_t size;
+private:
+    std::string& data_;
 };
-static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-  size_t realsize = size * nmemb;
-  struct MemoryStruct *mem = (struct MemoryStruct *)userp;
 
-  mem->memory = new char[realsize + 1];
-  mem->size = realsize;
 
-  memcpy(mem->memory, contents, realsize);
-  mem->memory[mem->size] = 0;
-
-  return realsize;
-}
-
-char* CurlWrapper::Get_d(const char* url, int* err/* = NULL*/)
+std::string CurlWrapper::Get(const char* url, int* err)
 {
 	CURL *curl;
 	CURLcode curl_err;
 	curl = curl_easy_init();
-	if (err) {
-		*err = 0;
-	}
+	*err = 0;
 	connection_h connection;
 	int conn_err;
 	conn_err = connection_create(&connection);
@@ -49,22 +40,20 @@ char* CurlWrapper::Get_d(const char* url, int* err/* = NULL*/)
 		*err = 0x80000000 | conn_err;
 		return NULL;
 	}
-	struct MemoryStruct chunk;
-
-	chunk.memory = NULL;
-	chunk.size = 0;
+	std::string res;
+	StringContext ctx(res);
 	dlog_print(DLOG_DEBUG, LOG_TAG, "%s", url);
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &ctx);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &StringContext::WriteCallback);
 
 	char *proxy_address;
 	conn_err = connection_get_proxy(connection, CONNECTION_ADDRESS_FAMILY_IPV4, &proxy_address);
 	if (conn_err != CONNECTION_ERROR_NONE) {
 		dlog_print(DLOG_ERROR, LOG_TAG, "ERROR1.3 %s", get_error_message(conn_err));
 		*err = 0x81000000 | conn_err;
-	    return NULL;
+	    return "";
 	}
 	curl_easy_setopt(curl, CURLOPT_PROXY, proxy_address);
 	dlog_print(DLOG_DEBUG, LOG_TAG, "Proxy: %s", proxy_address);
@@ -72,18 +61,12 @@ char* CurlWrapper::Get_d(const char* url, int* err/* = NULL*/)
 	curl_err = curl_easy_perform(curl);
 	if (curl_err != CURLE_OK) {
 		dlog_print(DLOG_ERROR, LOG_TAG, "ERROR2 %s %d", get_error_message(curl_err), curl_err);
-		curl_easy_cleanup(curl);
-		connection_destroy(connection);
-		if (err) {
-			*err = curl_err;
-		}
-		return NULL;
+		*err = curl_err;
+		res = "";
 	}
-	//dlog_print(DLOG_INFO, LOG_TAG, chunk.memory);
-
 
 	curl_easy_cleanup(curl);
 	connection_destroy(connection);
-	return chunk.memory;
+	return res;
 }
 

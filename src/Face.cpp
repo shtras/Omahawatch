@@ -1,7 +1,6 @@
 #include "Face.h"
 #include "data.h"
 #include "CurlWrapper.h"
-#include "Helpers.h"
 #include <stdarg.h>
 #include <time.h>
 
@@ -214,14 +213,14 @@ void Face::updateWeather()
 	WATCH_ERR("%s", "updw");
 	char url[256];
 	sprintf(url, "http://api.openweathermap.org/data/2.5/weather?lat=%.3f&lon=%.3f&APPID=2ebb4c9fd2cc3a66a962f5b5837e7110", latitude_, longitude_);
-	int err;
-	AutoDel<char*> json = CurlWrapper::Get_d(url, &err);
-	if (!json) {
+	int err = 0;
+	auto json = CurlWrapper::Get(url, &err);
+	if (json.empty()) {
 		WATCH_ERR("curl: %d", err);
 		return;
 	}
 
-	bool res = weather_->FromJson(json);
+	bool res = weather_->FromJson(json.c_str());
 	if (res) {
 		updateWeatherText();
 
@@ -237,7 +236,7 @@ void Face::updateWeather()
 	} else {
 		WATCH_ERR("%s", "jsnerr");
 	}
-	dlog_print(DLOG_DEBUG, LOG_TAG, "Weather: %s", json.operator char*());
+	dlog_print(DLOG_DEBUG, LOG_TAG, "Weather: %s", json.c_str());
 }
 
 void Face::moveSunIcon(Evas_Object* icon, time_t time)
@@ -750,7 +749,7 @@ void Face::setLastError(const char* fmt, ...)
 		errors_.pop_front();
 	}
 	char allErrors[1024] = {0};
-	for (auto itr: errors_) {
+	for (const auto& itr: errors_) {
 		strcat(allErrors, itr.c_str());
 		strcat(allErrors, "<br/>");
 	}
