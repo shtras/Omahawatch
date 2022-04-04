@@ -101,11 +101,12 @@ bool WeatherInfo::FromJson(const char* json)
 	gchar* name = json_node_dup_string(nameNode);
 	strncpy(location_, name, sizeof(location_) / sizeof(location_[0]) - 1);
 	g_free(name);
-	if (strlen(location_) > 20) {
-		location_[17] = '.';
-		location_[18] = '.';
-		location_[19] = '.';
-		location_[20] = '\0';
+	constexpr int maxLocationSize = 12;
+	if (strlen(location_) > 12) {
+		location_[maxLocationSize - 3] = '.';
+		location_[maxLocationSize - 2] = '.';
+		location_[maxLocationSize - 1] = '.';
+		location_[maxLocationSize] = '\0';
 	}
 
 	// Icon
