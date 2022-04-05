@@ -101,12 +101,11 @@ private:
 	bool ambient_;
 
 	int steps_;
-	int calories_;
 
 	int lastSteps_;
-	int lastCalories_;
 
 	int lastTickDay_;
+	int lastTickMinute_;
 	double longitude_;
 	double latitude_;
 

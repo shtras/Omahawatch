@@ -69,10 +69,9 @@ Face::Face(int width, int height):
 	listener_(NULL),
 	ambient_(false),
 	steps_(0),
-	calories_(0),
 	lastSteps_(0),
-	lastCalories_(0),
 	lastTickDay_(-1),
+	lastTickMinute_(-1),
 	longitude_(0),
 	latitude_(0),
 	locationState_(-1),
@@ -344,15 +343,16 @@ void Face::onListener(sensor_h sensorHanlder, sensor_event_s* event)
 {
 	// Assume pedometer. Extend later.
 	steps_ = (int)event->values[0];
-	calories_ = (int)event->values[4];
 }
 
 void Face::Tick(watch_time_h time)
 {
 	Timer::GetInstance().Tick();
 	bool resetSensorCounters = false;
-	int currDay;
+	int currDay = 0;
+	int minute = 0;
 	watch_time_get_day(time, &currDay);
+	watch_time_get_minute(time, &minute);
 
 	if (lastTickDay_ == -1) {
 		resetSensorCounters = true;
@@ -367,9 +367,7 @@ void Face::Tick(watch_time_h time)
 		int res = sensor_listener_read_data(listener_, &event);
 		if (res == SENSOR_ERROR_NONE) {
 			lastSteps_ = event.values[0];
-			lastCalories_ = event.values[4];
 			steps_ = lastSteps_;
-			calories_ = lastCalories_;
 			dlog_print(DLOG_INFO, LOG_TAG, "Counters reset");
 		} else {
 			lastTickDay_ = -1;
@@ -378,8 +376,11 @@ void Face::Tick(watch_time_h time)
 	}
 
 	moveHands(time);
-	updateTextFields();
-	updateDate(time);
+	if (lastTickMinute_ != minute) {
+		lastTickMinute_ = minute;
+		updateTextFields();
+		updateDate(time);
+	}
 }
 
 bool Face::ToggleAmbient(bool ambient)
@@ -729,7 +730,6 @@ void Face::updateTextFields()
 	snprintf(text, sizeof(text), "%d%%", batteryPercent);
 	elm_object_part_text_set(layout_, "txt.battery.num", text);
 	updateTextField("txt.steps.num", steps_ - lastSteps_);
-	updateTextField("txt.calories.num", calories_ - lastCalories_);
 }
 
 void Face::updateTextField(const char* fieldId, int value)

@@ -104,8 +104,8 @@ collections {
             type: IMAGE;
             description {
                state: "default" 0.0;
-               rel1 { relative: 257/360 263/360; }
-               rel2 { relative: 257/360 263/360; }
+               rel1 { relative: 257/360 284/360; }
+               rel2 { relative: 257/360 284/360; }
                align: 0.5 0.5;
                color_class: "dimmable";
                min: 52 30;
@@ -124,33 +124,6 @@ collections {
                text {
                   style: "txt.weather";
                   text: "1234";
-               }
-            }
-         }
-         part { name: "img.frame.calories";
-            type: IMAGE;
-            description {
-               state: "default" 0.0;
-               rel1 { relative: 257/360 294/360; }
-               rel2 { relative: 257/360 294/360; }
-               align: 0.5 0.5;
-               color_class: "dimmable";
-               min: 52 30;
-               fixed: 1 1;
-               image { normal: "frame1.png"; }
-            }
-         }
-         part { name: "txt.calories.num";
-            type: TEXTBLOCK;
-            description { state: "default" 0.0;
-               rel1 { relative: 0.5 0.5; to: "img.frame.calories"; }
-               rel2 { relative: 0.5 0.5; to: "img.frame.calories"; }               
-               align: 0.5 0.5;
-               min: 60 30;
-               color_class: "dimmable";
-               text {
-                  style: "txt.weather";
-                  text: "72527";
                }
             }
          }
