@@ -354,12 +354,8 @@ void Face::Tick(watch_time_h time)
 	watch_time_get_day(time, &currDay);
 	watch_time_get_minute(time, &minute);
 
-	if (lastTickDay_ == -1) {
+	if (lastTickDay_ == -1 || currDay != lastTickDay_ || steps_ < lastSteps_) {
 		resetSensorCounters = true;
-	} else {
-		if (currDay != lastTickDay_) {
-			resetSensorCounters = true;
-		}
 	}
 	lastTickDay_ = currDay;
 	if (resetSensorCounters) {

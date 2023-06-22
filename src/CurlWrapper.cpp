@@ -25,8 +25,25 @@ private:
     std::string& data_;
 };
 
+class CurlRAII
+{
+public:
+	CurlRAII(CURL* curl, connection_h connection):
+		curl_(curl), connection_(connection)
+	{
+	}
 
-std::string CurlWrapper::Get(const char* url, int* err)
+	~CurlRAII()
+	{
+		curl_easy_cleanup(curl_);
+		connection_destroy(connection_);
+	}
+private:
+	CURL* curl_;
+	connection_h connection_;
+};
+
+std::string CurlWrapper::Get(const char* url, int* err, bool useProxy/* = true*/)
 {
 	CURL *curl;
 	CURLcode curl_err;
@@ -35,6 +52,7 @@ std::string CurlWrapper::Get(const char* url, int* err)
 	connection_h connection;
 	int conn_err;
 	conn_err = connection_create(&connection);
+	CurlRAII raii{curl, connection};
 	if (conn_err != CONNECTION_ERROR_NONE) {
 		dlog_print(DLOG_ERROR, LOG_TAG, "ERROR1 %s", get_error_message(conn_err));
 		*err = 0x80000000 | conn_err;
@@ -47,26 +65,30 @@ std::string CurlWrapper::Get(const char* url, int* err)
 	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &ctx);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &StringContext::WriteCallback);
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
 
-	char *proxy_address;
-	conn_err = connection_get_proxy(connection, CONNECTION_ADDRESS_FAMILY_IPV4, &proxy_address);
-	if (conn_err != CONNECTION_ERROR_NONE) {
-		dlog_print(DLOG_ERROR, LOG_TAG, "ERROR1.3 %s", get_error_message(conn_err));
-		*err = 0x81000000 | conn_err;
-	    return "";
+	if (useProxy) {
+		char *proxy_address;
+		conn_err = connection_get_proxy(connection, CONNECTION_ADDRESS_FAMILY_IPV4, &proxy_address);
+		if (conn_err != CONNECTION_ERROR_NONE) {
+			dlog_print(DLOG_ERROR, LOG_TAG, "ERROR1.3 %s", get_error_message(conn_err));
+			*err = 0x81000000 | conn_err;
+			return "";
+		}
+		curl_easy_setopt(curl, CURLOPT_PROXY, proxy_address);
+		dlog_print(DLOG_DEBUG, LOG_TAG, "Proxy: %s", proxy_address);
 	}
-	curl_easy_setopt(curl, CURLOPT_PROXY, proxy_address);
-	dlog_print(DLOG_DEBUG, LOG_TAG, "Proxy: %s", proxy_address);
 
 	curl_err = curl_easy_perform(curl);
-	if (curl_err != CURLE_OK) {
-		dlog_print(DLOG_ERROR, LOG_TAG, "ERROR2 %s %d", get_error_message(curl_err), curl_err);
+	if (curl_err == CURLE_OPERATION_TIMEDOUT && useProxy) {
+		dlog_print(DLOG_ERROR, LOG_TAG, "Curl timed out with proxy. Trying without...");
+		return Get(url, err, false);
+	} else if (curl_err != CURLE_OK) {
+		dlog_print(DLOG_ERROR, LOG_TAG, "ERROR2 %d", curl_err);
 		*err = curl_err;
 		res = "";
 	}
 
-	curl_easy_cleanup(curl);
-	connection_destroy(connection);
 	return res;
 }
 
