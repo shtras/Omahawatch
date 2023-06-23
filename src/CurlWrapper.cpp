@@ -1,5 +1,6 @@
 #include "CurlWrapper.h"
 
+#include <functional>
 #include <curl/curl.h>
 #include <net_connection.h>
 #include <dlog.h>
@@ -25,22 +26,13 @@ private:
     std::string& data_;
 };
 
-class CurlRAII
+class finally
 {
 public:
-	CurlRAII(CURL* curl, connection_h connection):
-		curl_(curl), connection_(connection)
-	{
-	}
-
-	~CurlRAII()
-	{
-		curl_easy_cleanup(curl_);
-		connection_destroy(connection_);
-	}
+	explicit finally(std::function<void(void)>&& f) noexcept:f_(std::move(f)){}
+	~finally() noexcept {f_();}
 private:
-	CURL* curl_;
-	connection_h connection_;
+	std::function<void(void)> f_;
 };
 
 std::string CurlWrapper::Get(const char* url, int* err, bool useProxy/* = true*/)
@@ -52,7 +44,7 @@ std::string CurlWrapper::Get(const char* url, int* err, bool useProxy/* = true*/
 	connection_h connection;
 	int conn_err;
 	conn_err = connection_create(&connection);
-	CurlRAII raii{curl, connection};
+	finally f([&curl, &connection](){curl_easy_cleanup(curl); connection_destroy(connection);dlog_print(DLOG_DEBUG, LOG_TAG, "Curl cleanup");});
 	if (conn_err != CONNECTION_ERROR_NONE) {
 		dlog_print(DLOG_ERROR, LOG_TAG, "ERROR1 %s", get_error_message(conn_err));
 		*err = 0x80000000 | conn_err;
