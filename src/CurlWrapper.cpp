@@ -35,49 +35,59 @@ private:
 	std::function<void(void)> f_;
 };
 
-std::string CurlWrapper::Get(const char* url, int* err, bool useProxy/* = true*/)
+std::string CurlWrapper::Get(const std::string& url, int& err, bool useProxy/* = true*/)
 {
 	CURL *curl;
-	CURLcode curl_err;
+	CURLcode curlErr;
 	curl = curl_easy_init();
-	*err = 0;
+	char *proxyAddress = nullptr;
 	connection_h connection;
-	int conn_err;
-	conn_err = connection_create(&connection);
-	finally f([&curl, &connection](){curl_easy_cleanup(curl); connection_destroy(connection);dlog_print(DLOG_DEBUG, LOG_TAG, "Curl cleanup");});
-	if (conn_err != CONNECTION_ERROR_NONE) {
-		dlog_print(DLOG_ERROR, LOG_TAG, "ERROR1 %s", get_error_message(conn_err));
-		*err = 0x80000000 | conn_err;
+	int connErr;
+	connErr = connection_create(&connection);
+	finally f([&curl, &connection, &proxyAddress]() {
+		curl_easy_cleanup(curl);
+		connection_destroy(connection);
+		free(proxyAddress);
+		dlog_print(DLOG_DEBUG, LOG_TAG, "Curl cleanup");
+	});
+	if (connErr != CONNECTION_ERROR_NONE) {
+		dlog_print(DLOG_ERROR, LOG_TAG, "ERROR1 %s", get_error_message(connErr));
+		err = 0b1000000000000000 | connErr;
 		return NULL;
 	}
 	std::string res;
 	StringContext ctx(res);
-	dlog_print(DLOG_DEBUG, LOG_TAG, "%s", url);
-	curl_easy_setopt(curl, CURLOPT_URL, url);
+	dlog_print(DLOG_DEBUG, LOG_TAG, "%s", url.c_str());
+	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &ctx);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &StringContext::WriteCallback);
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
 
 	if (useProxy) {
-		char *proxy_address;
-		conn_err = connection_get_proxy(connection, CONNECTION_ADDRESS_FAMILY_IPV4, &proxy_address);
-		if (conn_err != CONNECTION_ERROR_NONE) {
-			dlog_print(DLOG_ERROR, LOG_TAG, "ERROR1.3 %s", get_error_message(conn_err));
-			*err = 0x81000000 | conn_err;
+		connErr = connection_get_proxy(connection, CONNECTION_ADDRESS_FAMILY_IPV4, &proxyAddress);
+		if (connErr != CONNECTION_ERROR_NONE) {
+			dlog_print(DLOG_ERROR, LOG_TAG, "ERROR1.3 %s", get_error_message(connErr));
+			err = 0b0100000000000000 | connErr;
 			return "";
 		}
-		curl_easy_setopt(curl, CURLOPT_PROXY, proxy_address);
-		dlog_print(DLOG_DEBUG, LOG_TAG, "Proxy: %s", proxy_address);
+		if (proxyAddress && *proxyAddress) {
+			dlog_print(DLOG_DEBUG, LOG_TAG, "Using proxy: %s", proxyAddress);
+			curl_easy_setopt(curl, CURLOPT_PROXY, proxyAddress);
+		} else {
+			dlog_print(DLOG_DEBUG, LOG_TAG, "Got empty proxy. Ignoring");
+		}
 	}
 
-	curl_err = curl_easy_perform(curl);
-	if (curl_err == CURLE_OPERATION_TIMEDOUT && useProxy) {
+	curlErr = curl_easy_perform(curl);
+	if (curlErr == CURLE_OPERATION_TIMEDOUT && useProxy) {
 		dlog_print(DLOG_ERROR, LOG_TAG, "Curl timed out with proxy. Trying without...");
-		return Get(url, err, false);
-	} else if (curl_err != CURLE_OK) {
-		dlog_print(DLOG_ERROR, LOG_TAG, "ERROR2 %d", curl_err);
-		*err = curl_err;
+		std::string res = Get(url, err, false);
+		err |= 0b0010000000000000;
+		return res;
+	} else if (curlErr != CURLE_OK) {
+		dlog_print(DLOG_ERROR, LOG_TAG, "ERROR2 %d %d", curlErr, useProxy);
+		err |= curlErr;
 		res = "";
 	}
 

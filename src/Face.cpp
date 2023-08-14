@@ -3,6 +3,9 @@
 #include "CurlWrapper.h"
 #include <stdarg.h>
 #include <time.h>
+#include <string>
+#include <sstream>
+#include <iomanip>
 
 #ifdef _DEBUG
 #define WATCH_ERR(f, ...) \
@@ -213,13 +216,16 @@ void Face::updateWeatherText()
 void Face::updateWeather()
 {
 	WATCH_ERR("%s", "updw");
-	char url[256];
-	sprintf(url, "http://api.openweathermap.org/data/2.5/weather?lat=%.3f&lon=%.3f&APPID=" QUOTE(WEATHER_TOKEN), latitude_, longitude_);
+	std::stringstream weatherUrlSS;
+	weatherUrlSS << "http://api.openweathermap.org/data/2.5/weather?lat=" << std::setprecision(3) << latitude_ << "&lon=" << longitude_ << "&APPID=" << QUOTE(WEATHER_TOKEN);
 	int err = 0;
-	auto json = CurlWrapper::Get(url, &err);
+	auto json = CurlWrapper::Get(weatherUrlSS.str(), err);
 	if (json.empty()) {
 		WATCH_ERR("curl: %d", err);
 		return;
+	}
+	if (err != 0) {
+		WATCH_ERR("curl_e: %d", err);
 	}
 
 	bool res = weather_->FromJson(json.c_str());

@@ -6,7 +6,7 @@
 class CurlWrapper {
 public:
 	void Test();
-	static std::string Get(const char* url, int* err, bool useProxy = true);
+	static std::string Get(const std::string& url, int& err, bool useProxy = true);
 private:
 
 };
